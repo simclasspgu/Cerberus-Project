@@ -1,0 +1,4 @@
+=== Original Text ===
+This is a test text for the document QA system.
+We want to split it into smaller sections.
+Each section should be reviewed separately.
