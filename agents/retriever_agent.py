@@ -1,27 +1,20 @@
 from typing import List
-from dataclasses import dataclass
-
-
-@dataclass
-class DocumentChunk:
-    text: str
-    source: str
-    chunk_id: int
-
+from agents.retriever_agent import DocumentChunk  # فرض DocumentChunk داریم
 
 class RetrieverAgent:
-    def __init__(self, chunks: List[DocumentChunk]):
-        self.chunks = chunks
+    def __init__(self, document_path: str):
+        text = load_document(document_path)
+        self.chunks = chunk_text(text)
 
-    def retrieve(self, query: str, top_k: int = 2) -> List[DocumentChunk]:
-        query_words = set(query.lower().split())
+    def retrieve(self, question: str, top_k: int = 1) -> List[DocumentChunk]:
+        # فعلاً یک نمونه ساده
+        scored_chunks = []
+        for chunk_text in self.chunks:
+            score = sum(word.lower() in chunk_text.lower() for word in question.split())
+            scored_chunks.append((score, chunk_text))
 
-        scored = []
-        for chunk in self.chunks:
-            chunk_words = set(chunk.text.lower().split())
-            score = len(query_words & chunk_words)
-            scored.append((score, chunk))
+        scored_chunks.sort(reverse=True, key=lambda x: x[0])
 
-        scored.sort(key=lambda x: x[0], reverse=True)
-
-        return [chunk for score, chunk in scored[:top_k]]
+        # حالا DocumentChunk بسازیم
+        return [DocumentChunk(text=chunk, source="document", chunk_id=i)
+                for i, (_, chunk) in enumerate(scored_chunks[:top_k])]
