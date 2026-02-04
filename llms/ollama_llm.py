@@ -1,7 +1,8 @@
-from langchain_community.llms import Ollama
+from langchain_ollama import OllamaLLM
 
 def get_llm():
-    return Ollama(
+    return OllamaLLM(
         model="qwen:latest",
-        temperature=0.2
+        temperature=0,
+        verbose=True
     )
