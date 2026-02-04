@@ -1,33 +1,26 @@
-from langgraph.graph import StateGraph, END
-from graph.state import GraphState
-from graph.nodes import (
-    retriever_node,
-    reasoning_node,
-    utility_node,
-    fallback_node
-)
+from agents.retriever_agent import RetrieverAgent
+from agents.reasoning_agent import ReasoningAgent
+from agents.utility_agent import UtilityAgent
 
-def build_graph():
-    graph = StateGraph(GraphState)
+class GraphApp:
+    def __init__(self):
+        self.retriever = None
+        self.reasoner = ReasoningAgent()
+        self.utility = UtilityAgent()
 
-    graph.add_node("retrieve", retriever_node)
-    graph.add_node("reason", reasoning_node)
-    graph.add_node("utility", utility_node)
-    graph.add_node("fallback", fallback_node)
+    def invoke(self, state):
+        question = state.get("question")
+        task = state.get("task")
 
-    graph.set_entry_point("retrieve")
+        chunks = self.retriever.chunks if self.retriever else []
 
-    graph.add_conditional_edges(
-        "retrieve",
-        lambda state: "fallback" if not state.retrieved_chunks else "reason"
-    )
+        answer = self.reasoner.answer(chunks, question)
+        utility_output = self.utility.run_task(chunks, task)
 
-    graph.add_conditional_edges(
-        "reason",
-        lambda state: "utility" if state.task != "qa" else END
-    )
+        return {"answer": answer, "utility_output": utility_output}
 
-    graph.add_edge("utility", END)
-    graph.add_edge("fallback", END)
-
-    return graph.compile()
+def build_graph(file_path=None):
+    app = GraphApp()
+    if file_path:
+        app.retriever = RetrieverAgent(file_path)
+    return app

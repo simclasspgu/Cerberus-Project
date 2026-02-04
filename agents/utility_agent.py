@@ -1,56 +1,35 @@
 from typing import List
-from models.document import DocumentChunk
+from ingestion.chunker import DocumentChunk
 from llms.ollama_llm import get_llm
 
 class UtilityAgent:
     def __init__(self):
         self.llm = get_llm()
 
-    def run_task(self, chunks: List[DocumentChunk], task: str) -> str:
-        if not chunks:
-            return "No document content found."
+    def summarize(self, chunks: List[DocumentChunk]) -> str:
+        text = "\n".join([c.text for c in chunks])
+        prompt = f"Summarize the following text:\n{text}"
+        result = self.llm.generate([prompt])
+        return result.generations[0][0].text if hasattr(result, "generations") else str(result)
 
-        context = "\n".join(chunk.text for chunk in chunks)
+    def translate(self, chunks: List[DocumentChunk], target_language="fa") -> str:
+        text = "\n".join([c.text for c in chunks])
+        prompt = f"Translate the following text into {target_language}:\n{text}"
+        result = self.llm.generate([prompt])
+        return result.generations[0][0].text if hasattr(result, "generations") else str(result)
 
-        if task.lower() == "summary":
-            prompt = f"""
-Summarize the following text concisely:
+    def generate_checklist(self, chunks: List[DocumentChunk]) -> str:
+        text = "\n".join([c.text for c in chunks])
+        prompt = f"Generate a JSON checklist from the following text:\n{text}"
+        result = self.llm.generate([prompt])
+        return result.generations[0][0].text if hasattr(result, "generations") else str(result)
 
-{context}
-"""
-        elif task.lower() == "translate":
-            prompt = f"""
-You are a professional technical translator.
-
-Translate the following English text into clear, accurate Persian.
-Preserve the original meaning.
-Do NOT summarize.
-Do NOT add or remove information.
-Only output the translation.
-
-
-{context}
-"""
-        elif task.lower() == "checklist":
-            prompt = f"""
-You are an information extraction system.
-
-Extract ALL actionable tasks from the text below.
-
-Rules:
-- Output MUST be a JSON array
-- Each task must be explicit and distinct
-- Each item must contain:
-  - "task": string
-  - "done": false
-- Do NOT explain
-- Do NOT summarize
-- Do NOT output anything outside JSON
-
-Text:
-{context}
-"""
+    def run_task(self, chunks: List[DocumentChunk], task: str):
+        if task == "summary":
+            return self.summarize(chunks)
+        elif task == "translate":
+            return self.translate(chunks)
+        elif task == "checklist":
+            return self.generate_checklist(chunks)
         else:
-            return f"Unknown task: {task}"
-
-        return self.llm.invoke(prompt)
+            return "Unknown task"
