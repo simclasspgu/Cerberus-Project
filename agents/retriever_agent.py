@@ -1,20 +1,30 @@
 from typing import List
-from agents.retriever_agent import DocumentChunk  # فرض DocumentChunk داریم
+from models.document import DocumentChunk
+from ingestion.loader import load_document
+from ingestion.chunker import chunk_text
 
 class RetrieverAgent:
     def __init__(self, document_path: str):
         text = load_document(document_path)
-        self.chunks = chunk_text(text)
+        self.chunks = chunk_text(text, source=document_path)
 
-    def retrieve(self, question: str, top_k: int = 1) -> List[DocumentChunk]:
-        # فعلاً یک نمونه ساده
-        scored_chunks = []
-        for chunk_text in self.chunks:
-            score = sum(word.lower() in chunk_text.lower() for word in question.split())
-            scored_chunks.append((score, chunk_text))
+    def retrieve(self, query: str, top_k: int = 2) -> List[DocumentChunk]:
+        scored = []
 
-        scored_chunks.sort(reverse=True, key=lambda x: x[0])
+        for i, chunk in enumerate(self.chunks):
+            score = sum(
+                word.lower() in chunk.text.lower()
+                for word in query.split()
+            )
+            scored.append((score, chunk, i))
 
-        # حالا DocumentChunk بسازیم
-        return [DocumentChunk(text=chunk, source="document", chunk_id=i)
-                for i, (_, chunk) in enumerate(scored_chunks[:top_k])]
+        scored.sort(reverse=True, key=lambda x: x[0])
+
+        return [
+            DocumentChunk(
+                text=chunk.text,
+                source=chunk.source,
+                chunk_id=chunk.chunk_id
+            )
+            for _, chunk, _ in scored[:top_k]
+        ]

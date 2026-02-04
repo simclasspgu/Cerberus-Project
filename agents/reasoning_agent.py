@@ -24,7 +24,7 @@ Answer:
 class ReasoningAgent:
     def __init__(self):
         self.llm = get_llm()
-        # LCEL style pipeline
+
         self.chain = REASONING_PROMPT | self.llm
 
     def answer(self, chunks: List[DocumentChunk], question: str) -> str:

@@ -1,40 +1,56 @@
 from typing import List
+from models.document import DocumentChunk
 from llms.ollama_llm import get_llm
-from agents.retriever_agent import DocumentChunk
 
 class UtilityAgent:
     def __init__(self):
-        # LLM رو از تابعی که قبلاً ساختیم می‌گیریم
         self.llm = get_llm()
 
     def run_task(self, chunks: List[DocumentChunk], task: str) -> str:
-        """
-        chunks: متن‌های تقسیم شده‌ی سند
-        task: نوع کاربر
-              'summary' -> خلاصه
-              'translate' -> ترجمه فارسی
-              'checklist' -> ساخت checklist
-        """
-        # اگر سند خالی بود
         if not chunks:
             return "No document content found."
 
-        # متن کامل سند
         context = "\n".join(chunk.text for chunk in chunks)
 
-        # بسته به task، prompt می‌سازیم
         if task.lower() == "summary":
-            prompt = f"Summarize the following text concisely:\n\n{context}"
+            prompt = f"""
+Summarize the following text concisely:
+
+{context}
+"""
         elif task.lower() == "translate":
-            prompt = f"Translate the following text to Persian:\n\n{context}"
+            prompt = f"""
+You are a professional technical translator.
+
+Translate the following English text into clear, accurate Persian.
+Preserve the original meaning.
+Do NOT summarize.
+Do NOT add or remove information.
+Only output the translation.
+
+
+{context}
+"""
         elif task.lower() == "checklist":
-            prompt = (
-                f"From the following text, create a checklist of tasks in JSON format. "
-                f"Each task should have 'task' and 'done' keys.\n\n{context}"
-            )
+            prompt = f"""
+You are an information extraction system.
+
+Extract ALL actionable tasks from the text below.
+
+Rules:
+- Output MUST be a JSON array
+- Each task must be explicit and distinct
+- Each item must contain:
+  - "task": string
+  - "done": false
+- Do NOT explain
+- Do NOT summarize
+- Do NOT output anything outside JSON
+
+Text:
+{context}
+"""
         else:
             return f"Unknown task: {task}"
 
-        # LLM رو صدا می‌زنیم
-        response = self.llm.generate(prompt)
-        return response
+        return self.llm.invoke(prompt)
