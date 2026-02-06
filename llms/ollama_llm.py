@@ -2,7 +2,7 @@ from langchain_ollama import OllamaLLM
 
 def get_llm():
     return OllamaLLM(
-        model="qwen:latest",
+        model="llama2",   
         temperature=0,
         verbose=True
     )

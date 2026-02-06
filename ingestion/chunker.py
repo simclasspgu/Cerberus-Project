@@ -1,13 +1,13 @@
-from dataclasses import dataclass
-
-@dataclass
 class DocumentChunk:
-    text: str
+    def __init__(self, text):
+        self.text = text
 
-def chunk_text(text: str, chunk_size: int = 500) -> list[DocumentChunk]:
-    words = text.split()
+def chunk_text(text, chunk_size=1000, overlap=100):
     chunks = []
-    for i in range(0, len(words), chunk_size):
-        chunk_words = words[i:i+chunk_size]
-        chunks.append(DocumentChunk(" ".join(chunk_words)))
+    start = 0
+    while start < len(text):
+        end = min(start + chunk_size, len(text))
+        chunk_text = text[start:end]
+        chunks.append(DocumentChunk(chunk_text))
+        start += chunk_size - overlap
     return chunks
