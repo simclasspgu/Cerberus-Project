@@ -1,0 +1,7 @@
+langchain
+langchain-core
+langchain-community
+langchain-ollama
+ollama
+rank-bm25
+sentence-transformers

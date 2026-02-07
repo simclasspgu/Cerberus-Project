@@ -5,25 +5,21 @@ from agents.retriever_agent import RetrieverAgent
 from agents.reasoning_agent import ReasoningAgent
 from graph.workflow import build_graph
 from graph.state import GraphState
+source = "data/sample.txt"
+text = load_document(source)
 
-# Step 1: Load document
-text = load_document("data/sample.txt")
+chunks = chunk_text(text, source=source, chunk_size=200, overlap=50)
 
-# Step 2: Chunk document
-chunks = chunk_text(text, chunk_size=1000, overlap=100)
-
-# Step 3: Initialize Retriever
 retriever = RetrieverAgent(chunks)
 
-# Step 4: Retrieve relevant chunks
-retrieved_chunks = retriever.retrieve("What is the document QA system about?", top_k=2)
+question = "What is the document QA system about?"
+retrieved_chunks = retriever.retrieve(question, top_k=2)
+print("Retrieved:", [(c.source, c.chunk_id) for c in retrieved_chunks])
 
-# Step 5: Reasoning Agent (Ollama)
 reasoner = ReasoningAgent()
-answer = reasoner.answer(retrieved_chunks, "What is the document QA system about?")
+answer = reasoner.answer(retrieved_chunks, question)
 print("Answer:\n", answer)
 
-# Step 6: Utility Agent
 utility = UtilityAgent()
 summary = utility.run_task(retrieved_chunks, "summary")
 translation = utility.run_task(retrieved_chunks, "translate")
@@ -33,9 +29,8 @@ print("\nSummary:\n", summary)
 print("\nTranslation:\n", translation)
 print("\nChecklist:\n", checklist)
 
-# Step 7: LangGraph workflow
-app = build_graph()
-state = GraphState(question="What is the document QA system about?", task="checklist")
+app = build_graph(retriever)   # اگر workflow رو اصلاح کردی
+state = GraphState(question=question, task="checklist")
 result = app.invoke(state)
 print("\nGraph Workflow Answer:\n", result["answer"])
 print("Graph Utility Output:\n", result["utility_output"])
